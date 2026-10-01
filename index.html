@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Railway Platform Management System — Digital Logic Simulation</title>
+<style>
+  :root{
+    --navy:#1B2430; --navy2:#232E3F; --paper:#F4F6F8; --white:#FFFFFF;
+    --green:#2E7D32; --greenlt:#E3F1E4; --red:#C62828; --redlt:#FBE4E4;
+    --amber:#F9A825; --amberlt:#FEF3DD; --muted:#5A6472; --line:#D9DEE3;
+    --steel:#CADCFC;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--paper);font-family:'Segoe UI',Calibri,Arial,sans-serif;color:var(--navy);}
+  header{background:var(--navy);color:var(--white);padding:22px 30px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
+  header .lamps span{display:inline-block;width:14px;height:14px;border-radius:50%;margin-right:6px;vertical-align:middle;}
+  header h1{font-size:22px;margin:0 0 4px 0;font-weight:700;}
+  header .sub{font-size:13px;color:#AAB4C4;letter-spacing:.5px;}
+  .wrap{max-width:1300px;margin:0 auto;padding:24px 20px 60px;}
+
+  .toprow{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:22px;}
+  .panel{background:var(--white);border:1px solid var(--line);border-radius:12px;padding:18px 20px;box-shadow:0 1px 3px rgba(0,0,0,.06);}
+  .panel h2{margin:0 0 14px 0;font-size:15px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);}
+
+  .controls{flex:1 1 340px;}
+  .control-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px;}
+  label{font-size:13px;font-weight:600;color:var(--navy);margin-right:4px;}
+  select, button{
+    font-size:14px;padding:9px 14px;border-radius:8px;border:1px solid var(--line);
+    background:var(--white);cursor:pointer;font-family:inherit;
+  }
+  button{font-weight:700;border:none;color:#fff;transition:transform .08s ease;}
+  button:active{transform:scale(.96);}
+  .btn-arrive{background:var(--green);}
+  .btn-depart{background:var(--red);}
+  .btn-reset{background:var(--muted);}
+  button:disabled{background:#B9C0C9;cursor:not-allowed;}
+
+  .toggle{display:flex;align-items:center;gap:8px;background:var(--amberlt);border:1px solid #F0D08A;border-radius:8px;padding:8px 12px;}
+  .toggle input{width:18px;height:18px;}
+  .toggle.active{background:#FCE2A8;}
+
+  .counter-panel{flex:0 0 300px;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .counter-panel h2{align-self:flex-start;}
+  .bits{display:flex;gap:6px;margin-bottom:14px;}
+  .bit{width:38px;height:44px;border-radius:6px;background:var(--navy);color:#5CFF7A;font-family:'Courier New',monospace;font-weight:700;font-size:22px;display:flex;align-items:center;justify-content:center;transition:background .2s;}
+  .bit.zero{color:#3A4658;}
+  .sevenseg{width:70px;height:120px;position:relative;}
+  .seg{position:absolute;background:#DCE1E6;border-radius:3px;transition:background .15s;}
+  .seg.on{background:var(--green);box-shadow:0 0 8px rgba(46,125,50,.6);}
+  .seg-a{top:0;left:10px;width:50px;height:10px;}
+  .seg-b{top:6px;left:54px;width:10px;height:52px;}
+  .seg-c{top:62px;left:54px;width:10px;height:52px;}
+  .seg-d{top:110px;left:10px;width:50px;height:10px;}
+  .seg-e{top:62px;left:0;width:10px;height:52px;}
+  .seg-f{top:6px;left:0;width:10px;height:52px;}
+  .seg-g{top:55px;left:10px;width:50px;height:10px;}
+  .counter-label{font-size:12.5px;color:var(--muted);margin-top:10px;text-align:center;}
+
+  .platforms{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px;margin-bottom:22px;}
+  .platform{background:var(--white);border:2px solid var(--line);border-radius:14px;padding:18px;text-align:center;position:relative;transition:box-shadow .2s, border-color .2s;}
+  .platform.flash{animation:flashAnim .6s ease;}
+  @keyframes flashAnim{
+    0%{box-shadow:0 0 0 0 rgba(249,168,37,.9);}
+    100%{box-shadow:0 0 0 16px rgba(249,168,37,0);}
+  }
+  .platform .pid{font-size:13px;font-weight:700;letter-spacing:1px;color:var(--muted);margin-bottom:8px;}
+  .platform .pid-num{display:inline-block;width:46px;height:60px;position:relative;margin:0 auto 10px;}
+  .lamp{width:26px;height:26px;border-radius:50%;margin:0 auto 10px;border:3px solid rgba(0,0,0,.15);transition:background .2s;}
+  .lamp.green{background:var(--green);box-shadow:0 0 10px rgba(46,125,50,.7);}
+  .lamp.red{background:var(--red);box-shadow:0 0 10px rgba(198,40,40,.7);}
+  .status-label{font-size:15px;font-weight:700;margin-bottom:4px;}
+  .status-label.free{color:var(--green);}
+  .status-label.occupied{color:var(--red);}
+  .train-tag{font-size:12px;color:var(--muted);min-height:16px;}
+  .express-badge{display:inline-block;background:var(--amber);color:#fff;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:10px;margin-top:6px;}
+
+  .truth-toggle{display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;}
+  .truth-toggle .arrow{transition:transform .2s;}
+  .truth-toggle.open .arrow{transform:rotate(180deg);}
+  .truth-body{overflow:hidden;max-height:0;transition:max-height .3s ease;}
+  .truth-body.open{max-height:900px;}
+  table{width:100%;border-collapse:collapse;margin-top:14px;font-size:13px;}
+  th{background:var(--navy);color:#fff;padding:8px 10px;text-align:center;font-size:12px;}
+  td{padding:7px 10px;text-align:center;border-bottom:1px solid var(--line);font-family:'Courier New',monospace;}
+  tr.current-row td{background:var(--amberlt);font-weight:700;}
+  .legend{font-size:12px;color:var(--muted);margin-top:10px;line-height:1.6;}
+  .event-log{margin-top:16px;font-size:12.5px;color:var(--muted);max-height:110px;overflow-y:auto;border-top:1px dashed var(--line);padding-top:10px;}
+  .event-log div{padding:2px 0;}
+  footer{text-align:center;color:var(--muted);font-size:11.5px;padding:20px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Railway Platform Management System</h1>
+    <div class="sub">Digital Logic Simulation · Decoder · Flip-Flops · Gates · Priority Encoder · Counter</div>
+  </div>
+  <div class="lamps">
+    <span style="background:var(--red)"></span><span style="background:var(--amber)"></span><span style="background:var(--green)"></span>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="toprow">
+    <div class="panel controls">
+      <h2>Controls</h2>
+
+      <div class="control-row">
+        <label for="trainSelect">Train ID</label>
+        <select id="trainSelect">
+          <option value="T1">Train T1</option>
+          <option value="T2">Train T2</option>
+          <option value="T3">Train T3</option>
+          <option value="T4">Train T4</option>
+          <option value="T5">Train T5</option>
+          <option value="T6">Train T6</option>
+        </select>
+        <div class="toggle" id="expressToggleWrap">
+          <input type="checkbox" id="expressToggle">
+          <label for="expressToggle" style="margin:0;">Express / Priority Train</label>
+        </div>
+      </div>
+
+      <div class="control-row">
+        <button class="btn-arrive" id="arriveBtn">🚆 Train Arrives (Allocate)</button>
+      </div>
+
+      <div class="control-row">
+        <label for="departSelect">Departing from</label>
+        <select id="departSelect"></select>
+        <button class="btn-depart" id="departBtn">Train Departs (Clear)</button>
+      </div>
+
+      <div class="control-row">
+        <button class="btn-reset" id="resetBtn">↺ Reset System</button>
+      </div>
+
+      <div class="event-log" id="eventLog"></div>
+    </div>
+
+    <div class="panel counter-panel">
+      <h2>Train Counter / Display</h2>
+      <div class="bits" id="bitsRow"></div>
+      <div class="sevenseg" id="sevenSeg">
+        <div class="seg seg-a" data-seg="a"></div>
+        <div class="seg seg-b" data-seg="b"></div>
+        <div class="seg seg-c" data-seg="c"></div>
+        <div class="seg seg-d" data-seg="d"></div>
+        <div class="seg seg-e" data-seg="e"></div>
+        <div class="seg seg-f" data-seg="f"></div>
+        <div class="seg seg-g" data-seg="g"></div>
+      </div>
+      <div class="counter-label">Trains processed (4-bit binary counter → BCD → 7-segment)</div>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-bottom:22px;">
+    <h2>Platforms (Occupancy · Signal · Allocation)</h2>
+    <div class="platforms" id="platformsGrid"></div>
+  </div>
+
+  <div class="panel" style="margin-bottom:22px;">
+    <h2>Waiting Queue <span style="font-weight:400;color:var(--muted);text-transform:none;">(fills when all platforms are busy — express jumps to the front)</span></h2>
+    <div id="queueRow" style="display:flex;gap:10px;flex-wrap:wrap;min-height:28px;"></div>
+  </div>
+
+  <div class="panel">
+    <div class="truth-toggle" id="truthToggle">
+      <h2 style="margin:0;">Live Logic / Truth Table Panel <span style="font-weight:400;color:var(--muted);text-transform:none;">(click to expand)</span></h2>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="truth-body" id="truthBody">
+      <p class="legend"><b>Decoder / Allocation:</b> I1 I0 = binary platform request from priority encoder. EN = 1 only if that platform's occupancy flip-flop Q = 0 (free).<br>
+      <b>Signal Logic:</b> RED = Q, GREEN = NOT Q, applied per platform.<br>
+      <b>Priority Encoder:</b> an Express request (P=1) always pre-empts regular requests for the next free platform.</p>
+      <table id="truthTable">
+        <thead>
+          <tr><th>I1</th><th>I0</th><th>EN</th><th>P0</th><th>P1</th><th>P2</th><th>P3</th><th>Allocated</th></tr>
+        </thead>
+        <tbody id="truthBodyRows"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<footer>Standalone offline simulation — all allocation, occupancy, signal and counter logic runs as literal boolean/conditional JavaScript mirroring the gate-level truth tables.</footer>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- STATE ----------
+  const NUM_PLATFORMS = 4;
+  // occupancy flip-flops: Q0..Q3 (0 = free, 1 = occupied)
+  let Q = [0,0,0,0];
+  // which train currently sits on each platform (or null)
+  let occupant = [null,null,null,null];
+  // 4-bit binary counter (array of 4 bits, index0=Q0 LSB .. index3=Q3 MSB) — trains served
+  let counterBits = [0,0,0,0];
+  // pending express flag used at allocation time
+  let logEntries = [];
+
+  const els = {
+    trainSelect: document.getElementById('trainSelect'),
+    expressToggle: document.getElementById('expressToggle'),
+    expressWrap: document.getElementById('expressToggleWrap'),
+    arriveBtn: document.getElementById('arriveBtn'),
+    departSelect: document.getElementById('departSelect'),
+    departBtn: document.getElementById('departBtn'),
+    resetBtn: document.getElementById('resetBtn'),
+    platformsGrid: document.getElementById('platformsGrid'),
+    bitsRow: document.getElementById('bitsRow'),
+    eventLog: document.getElementById('eventLog'),
+    truthToggle: document.getElementById('truthToggle'),
+    truthBody: document.getElementById('truthBody'),
+    truthBodyRows: document.getElementById('truthBodyRows'),
+    queueRow: document.getElementById('queueRow'),
+  };
+
+  let waitingQueue = []; // {id, express} — express requests are unshifted to the front
+
+
+  // ---------- CORE DIGITAL LOGIC (mirrors gate-level truth tables) ----------
+
+  // 2-to-4 decoder: given 2-bit address (i1,i0) return one-hot array [P0,P1,P2,P3]
+  // gated by EN (0 if that specific platform's Q=1 / busy)
+  function decode2to4(i1, i0, enArr){
+    const addr = (i1<<1) | i0; // 0..3
+    const out = [0,0,0,0];
+    if(enArr[addr] === 1){
+      out[addr] = 1;
+    }
+    return out;
+  }
+
+  // Priority encoder: requests is array of {id, isExpress} for platforms wanting allocation.
+  // Real logic: among all *free* platforms, and among all *pending trains*, an express
+  // train's request is encoded first (I1 I0 = index of first free platform), regular
+  // trains get the next free platform in left-to-right (P0->P3) order otherwise.
+  function priorityEncode(freeMask){
+    // freeMask: array of 0/1, 1 = free. Returns lowest-index free platform, or -1.
+    for(let i=0;i<freeMask.length;i++){
+      if(freeMask[i]===1) return i;
+    }
+    return -1;
+  }
+
+  // Signal control combinational logic: RED = Q, GREEN = NOT Q
+  function signalFor(q){
+    return { red: q===1, green: q===0 };
+  }
+
+  // 4-bit synchronous binary counter increment (mirrors JK/D flip-flop toggle chain)
+  function incrementCounter(bits){
+    const b = bits.slice();
+    let carry = 1;
+    for(let i=0;i<b.length;i++){
+      const sum = b[i]+carry;
+      b[i] = sum % 2;
+      carry = Math.floor(sum/2);
+      if(carry===0) break;
+    }
+    return b;
+  }
+
+  // BCD (from counter bits, value 0-9 wraps) -> 7-segment decode table (a..g), 1=on
+  const SEVEN_SEG = {
+    0:{a:1,b:1,c:1,d:1,e:1,f:1,g:0},
+    1:{a:0,b:1,c:1,d:0,e:0,f:0,g:0},
+    2:{a:1,b:1,c:0,d:1,e:1,f:0,g:1},
+    3:{a:1,b:1,c:1,d:1,e:0,f:0,g:1},
+    4:{a:0,b:1,c:1,d:0,e:0,f:1,g:1},
+    5:{a:1,b:0,c:1,d:1,e:0,f:1,g:1},
+    6:{a:1,b:0,c:1,d:1,e:1,f:1,g:1},
+    7:{a:1,b:1,c:1,d:0,e:0,f:0,g:0},
+    8:{a:1,b:1,c:1,d:1,e:1,f:1,g:1},
+    9:{a:1,b:1,c:1,d:1,e:0,f:1,g:1},
+  };
+
+  function bitsToDecimal(bits){
+    return bits.reduce((acc,b,i)=> acc + (b<<i), 0);
+  }
+
+  // ---------- RENDERING ----------
+
+  function log(msg){
+    const t = new Date().toLocaleTimeString();
+    logEntries.unshift('[' + t + ']  ' + msg);
+    logEntries = logEntries.slice(0,30);
+    els.eventLog.innerHTML = logEntries.map(e => '<div>'+e+'</div>').join('');
+  }
+
+  function renderPlatforms(flashIdx){
+    els.platformsGrid.innerHTML = '';
+    for(let i=0;i<NUM_PLATFORMS;i++){
+      const sig = signalFor(Q[i]);
+      const div = document.createElement('div');
+      div.className = 'platform' + (flashIdx===i ? ' flash' : '');
+      div.innerHTML = `
+        <div class="pid">PLATFORM ${i}</div>
+        <div class="lamp ${sig.red ? 'red' : 'green'}"></div>
+        <div class="status-label ${Q[i]===1 ? 'occupied' : 'free'}">${Q[i]===1 ? 'OCCUPIED' : 'FREE'}</div>
+        <div class="train-tag">${occupant[i] ? 'Train ' + occupant[i].id + (occupant[i].express ? '' : '') : '—'}</div>
+        ${occupant[i] && occupant[i].express ? '<div class="express-badge">EXPRESS</div>' : ''}
+      `;
+      els.platformsGrid.appendChild(div);
+    }
+    // departure select options: only occupied platforms
+    const prevVal = els.departSelect.value;
+    els.departSelect.innerHTML = '';
+    let anyOccupied = false;
+    for(let i=0;i<NUM_PLATFORMS;i++){
+      if(Q[i]===1){
+        anyOccupied = true;
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = 'Platform ' + i + ' (Train ' + occupant[i].id + ')';
+        els.departSelect.appendChild(opt);
+      }
+    }
+    els.departBtn.disabled = !anyOccupied;
+    if(!anyOccupied){
+      const opt = document.createElement('option');
+      opt.textContent = 'No occupied platforms';
+      els.departSelect.appendChild(opt);
+    }
+  }
+
+  function renderCounter(){
+    // bits array: index0 = LSB (Q0) .. index3 = MSB (Q3). Display MSB first.
+    els.bitsRow.innerHTML = '';
+    for(let i=3;i>=0;i--){
+      const bit = counterBits[i];
+      const d = document.createElement('div');
+      d.className = 'bit' + (bit===0 ? ' zero' : '');
+      d.textContent = bit;
+      els.bitsRow.appendChild(d);
+    }
+    const decimal = bitsToDecimal(counterBits) % 10; // wrap to single BCD digit for display
+    const segPattern = SEVEN_SEG[decimal];
+    Object.keys(segPattern).forEach(seg => {
+      const el = document.querySelector('.seg-' + seg);
+      el.classList.toggle('on', segPattern[seg]===1);
+    });
+  }
+
+  function renderTruthTable(lastAlloc){
+    // If a decision was just made, show the truth table AS IT WAS EVALUATED
+    // at that moment (pre-allocation free mask) so the "current" row correctly
+    // reflects the decision that fired, not the post-allocation state.
+    const enArr = lastAlloc && lastAlloc.freeMaskAtDecision
+      ? lastAlloc.freeMaskAtDecision
+      : Q.map(q => q===0 ? 1 : 0);
+    const rows = [];
+    for(let i1=0;i1<2;i1++){
+      for(let i0=0;i0<2;i0++){
+        const addr = (i1<<1)|i0;
+        const out = decode2to4(i1,i0,enArr);
+        const isCurrent = lastAlloc && lastAlloc.addr === addr;
+        rows.push({i1,i0,en:enArr[addr],out,addr,isCurrent});
+      }
+    }
+    els.truthBodyRows.innerHTML = rows.map(r => `
+      <tr class="${r.isCurrent ? 'current-row' : ''}">
+        <td>${r.i1}</td><td>${r.i0}</td><td>${r.en}</td>
+        <td>${r.out[0]}</td><td>${r.out[1]}</td><td>${r.out[2]}</td><td>${r.out[3]}</td>
+        <td>${r.en ? 'Platform ' + r.addr : 'No allocation (busy)'}</td>
+      </tr>
+    `).join('');
+  }
+
+  function renderQueue(){
+    if(waitingQueue.length === 0){
+      els.queueRow.innerHTML = '<span style="color:var(--muted);font-size:13px;">— empty —</span>';
+      return;
+    }
+    els.queueRow.innerHTML = waitingQueue.map((t,i) => `
+      <span style="background:${t.express ? 'var(--amberlt)' : 'var(--paper)'};border:1px solid ${t.express ? '#F0D08A' : 'var(--line)'};
+        border-radius:8px;padding:6px 12px;font-size:13px;font-weight:${t.express?'700':'400'};">
+        #${i+1} · Train ${t.id}${t.express ? ' <span style="color:var(--amber);">★ EXPRESS</span>' : ''}
+      </span>
+    `).join('');
+  }
+
+  function renderAll(flashIdx, lastAlloc){
+    renderPlatforms(flashIdx);
+    renderCounter();
+    renderTruthTable(lastAlloc);
+    renderQueue();
+  }
+
+  // ---------- ACTIONS ----------
+
+  // Actually perform an allocation of a given request to the first free platform
+  // (the decoder/EN step) — shared by direct arrivals and queue drains.
+  // Returns {targetIdx, freeMaskAtDecision} or null if no platform is free.
+  function allocate(request){
+    const freeMask = Q.map(q => q===0 ? 1 : 0);
+    const targetIdx = priorityEncode(freeMask); // priority encoder output (I1 I0 address)
+    if(targetIdx === -1) return null;
+
+    const i1 = (targetIdx >> 1) & 1;
+    const i0 = targetIdx & 1;
+    const decoderOut = decode2to4(i1, i0, freeMask);
+    if(decoderOut[targetIdx] !== 1) return null;
+
+    Q[targetIdx] = 1;
+    occupant[targetIdx] = request;
+    counterBits = incrementCounter(counterBits);
+    return { targetIdx, freeMaskAtDecision: freeMask };
+  }
+
+  function handleArrive(){
+    const trainId = els.trainSelect.value;
+    const isExpress = els.expressToggle.checked;
+    const request = { id: trainId, express: isExpress };
+
+    const anyFree = Q.some(q => q===0);
+
+    if(!anyFree){
+      // No free platform: request joins the waiting queue. Priority encoder rule:
+      // an express request is inserted at the FRONT of the queue, overriding
+      // regular trains that arrived earlier — this is the visible priority override.
+      if(isExpress){
+        waitingQueue.unshift(request);
+        log('⛔ All platforms occupied. Express Train ' + trainId + ' (P=1) queued at FRONT — overrides waiting regular trains.');
+      } else {
+        waitingQueue.push(request);
+        log('⛔ All platforms occupied. Regular Train ' + trainId + ' queued at position ' + waitingQueue.length + '.');
+      }
+      renderAll(null, null);
+      return;
+    }
+
+    const result = allocate(request);
+    log('✅ Train ' + trainId + (isExpress ? ' (EXPRESS)' : '') + ' allocated to Platform ' + result.targetIdx + '. Q'+result.targetIdx+' set → RED. Counter incremented.');
+    renderAll(result.targetIdx, { addr: result.targetIdx, freeMaskAtDecision: result.freeMaskAtDecision });
+  }
+
+  function handleDepart(){
+    const idx = parseInt(els.departSelect.value, 10);
+    if(isNaN(idx)) return;
+    const t = occupant[idx];
+    // Reset flip-flop (D=0, clocked in) -> Q clears
+    Q[idx] = 0;
+    occupant[idx] = null;
+    log('🚉 Train ' + (t ? t.id : '?') + ' departed Platform ' + idx + '. Q'+idx+' cleared → GREEN.');
+
+    // If trains are waiting, the front of the queue (express-first) is
+    // immediately serviced by the newly-freed platform.
+    if(waitingQueue.length > 0){
+      const next = waitingQueue.shift();
+      const result = allocate(next);
+      log('➡️ Queue drains: Train ' + next.id + (next.express ? ' (EXPRESS)' : '') + ' allocated to Platform ' + result.targetIdx + ' from the waiting queue.');
+      renderAll(result.targetIdx, { addr: result.targetIdx, freeMaskAtDecision: result.freeMaskAtDecision });
+      return;
+    }
+
+    renderAll(idx, null);
+  }
+
+  function handleReset(){
+    Q = [0,0,0,0];
+    occupant = [null,null,null,null];
+    counterBits = [0,0,0,0];
+    waitingQueue = [];
+    logEntries = [];
+    els.eventLog.innerHTML = '';
+    log('System reset — all flip-flops cleared, counter = 0000, queue empty.');
+    renderAll(null, null);
+  }
+
+  // ---------- INIT ----------
+
+  els.arriveBtn.addEventListener('click', handleArrive);
+  els.departBtn.addEventListener('click', handleDepart);
+  els.resetBtn.addEventListener('click', handleReset);
+  els.expressToggle.addEventListener('change', () => {
+    els.expressWrap.classList.toggle('active', els.expressToggle.checked);
+  });
+  els.truthToggle.addEventListener('click', () => {
+    els.truthToggle.classList.toggle('open');
+    els.truthBody.classList.toggle('open');
+  });
+
+  handleReset();
+})();
+</script>
+
+</body>
+</html>
